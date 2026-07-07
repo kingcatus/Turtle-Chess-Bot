@@ -66,11 +66,11 @@ def evaluate_position(board):
                 score -= total_worth
     return score
 
-def minimax(board, depth, is_maximizing):
+def minimax(board, depth, alpha, beta, is_maximizing):
     """
-    Simulates the game back-and-forth up to a certain 'depth' (number of turns).
+    Minimax algorithm with Alpha-Beta Pruning.
+    Cuts off calculation branches that are guaranteed to be worse.
     """
-    # Base case: if we hit our maximum depth or the game is over, evaluate the board
     if depth == 0 or board.is_game_over():
         return evaluate_position(board)
 
@@ -78,55 +78,64 @@ def minimax(board, depth, is_maximizing):
         max_eval = -float('inf')
         for move in board.legal_moves:
             board.push(move)
-            evaluation = minimax(board, depth - 1, False)
+            evaluation = minimax(board, depth - 1, alpha, beta, False)
             board.pop()
             max_eval = max(max_eval, evaluation)
+            alpha = max(alpha, evaluation)
+            if beta <= alpha:
+                break  # Beta cutoff: Stop searching this branch
         return max_eval
     else:
         min_eval = float('inf')
         for move in board.legal_moves:
             board.push(move)
-            evaluation = minimax(board, depth - 1, True)
+            evaluation = minimax(board, depth - 1, alpha, beta, True)
             board.pop()
             min_eval = min(min_eval, evaluation)
+            beta = min(beta, evaluation)
+            if beta <= alpha:
+                break  # Alpha cutoff: Stop searching this branch
         return min_eval
 
 def choose_best_move(board, depth):
     """
-    The main coordinator that calls minimax to find the absolute best move.
+    Coordinates the main search using initialized alpha and beta constraints.
     """
     best_move = None
+    alpha = -float('inf')
+    beta = float('inf')
     
-    # White wants to maximize, Black wants to minimize
     if board.turn == chess.WHITE:
         best_score = -float('inf')
         for move in board.legal_moves:
             board.push(move)
-            score = minimax(board, depth - 1, False)
+            score = minimax(board, depth - 1, alpha, beta, False)
             board.pop()
             if score > best_score:
                 best_score = score
                 best_move = move
+            alpha = max(alpha, score)
     else:
         best_score = float('inf')
         for move in board.legal_moves:
             board.push(move)
-            score = minimax(board, depth - 1, True)
+            score = minimax(board, depth - 1, alpha, beta, True)
             board.pop()
             if score < best_score:
                 best_score = score
                 best_move = move
+            beta = min(beta, score)
 
     return best_move
 
-# --- Let's test its new vision! ---
+# --- Let's test its new optimized vision! ---
 board = chess.Board()
 print("--- NEW GAME STARTED ---")
 print(board) 
 
-# We tell it to look 3 moves deep (Depth 3)
-SEARCH_DEPTH = 3
-print(f"\nThinking... (Looking {SEARCH_DEPTH} moves ahead)")
+# Now we can comfortably look 4 or 5 moves deep without our machine freezing!
+SEARCH_DEPTH = 4
+print(f"\nThinking deeply... (Looking {SEARCH_DEPTH} moves ahead with Alpha-Beta Pruning)")
 
 bot_move = choose_best_move(board, SEARCH_DEPTH)
 print(f"\nThe bot looks ahead and calmly chooses: {bot_move}")
